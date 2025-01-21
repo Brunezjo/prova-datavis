@@ -1,26 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canvas Example</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Movement on Canvas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 20px;
+    }
+    #canvas {
+      border: 1px solid #000;
+    }
+    textarea {
+      width: 300px;
+      height: 150px;
+      margin-top: 20px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
 
-    <h1>Canvas Drawing Example</h1>
+  <h1>Text Movement on Canvas</h1>
 
-    <!-- Canvas Element -->
-    <canvas id="myCanvas" width="500" height="500" style="border:1px solid #000000;"></canvas>
+  <textarea id="text-input" placeholder="Paste your text here..."></textarea><br>
 
-    <script>
-        // Access the canvas element
-        var canvas = document.getElementById("myCanvas");
-        var ctx = canvas.getContext("2d");
+  <button onclick="startMovement()">Start Movement</button><br><br>
 
-        // Draw a red rectangle
-        ctx.fillStyle = "#FF0000"; // Set fill color to red
-        ctx.fillRect(50, 50, 150, 100); // Draw rectangle at (50,50) with width 150 and height 100
-    </script>
+  <canvas id="canvas" width="500" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const textarea = document.getElementById('text-input');
+    let text = "";
+    let yPos = 0;
+    let isMoving = false;
+
+    function startMovement() {
+      text = textarea.value.split('\n');  // Split the pasted text by new lines
+      yPos = 0;  // Reset the position
+      isMoving = true;
+      animateText();
+    }
+
+    function animateText() {
+      if (!isMoving) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+      ctx.font = '20px Arial';
+      ctx.fillStyle = 'black';
+
+      // Draw each line of text at the current position
+      for (let i = 0; i < text.length; i++) {
+        ctx.fillText(text[i], 50, yPos + (i * 30));  // Space out each line of text
+      }
+
+      yPos += 2; // Move the text down
+
+      // Stop when the text moves off the canvas
+      if (yPos < canvas.height) {
+        requestAnimationFrame(animateText);  // Keep animating
+      } else {
+        isMoving = false; // Stop animation when out of bounds
+      }
+    }
+  </script>
 
 </body>
 </html>
+
