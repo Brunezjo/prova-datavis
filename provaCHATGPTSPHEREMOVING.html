@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Top 50 Visualization</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #121212;
+      color: #fff;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="sphereCanvas"></canvas>
+
+  <script>
+    // Get the canvas and context
+    const canvas = document.getElementById('sphereCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas to full screen
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Array to store spheres
+    const spheres = [];
+
+    // Genre to color mapping
+    const genreColors = {
+      "canadian pop": "#ff6f61",
+      "reggaeton flow": "#ff9f1c",
+      "dance pop": "#2ec4b6",
+      "pop": "#8d99ae",
+      "dfw rap": "#e63946"
+    };
+
+    // Tooltip setup
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'absolute';
+    tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    tooltip.style.color = '#fff';
+    tooltip.style.padding = '5px 10px';
+    tooltip.style.borderRadius = '5px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.display = 'none';
+    document.body.appendChild(tooltip);
+
+    // Sphere class
+    class Sphere {
+      constructor(x, y, radius, dx, dy, color, track, artist) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.dx = dx;
+        this.dy = dy;
+        this.color = color;
+        this.track = track;
+        this.artist = artist;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      update() {
+        // Bounce off walls
+        if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+          this.dx = -this.dx;
+        }
+        if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+          this.dy = -this.dy;
+        }
+
+        // Move the sphere
+        this.x += this.dx;
+        this.y += this.dy;
+
+        // Draw updated sphere
+        this.draw();
+      }
+
+      isMouseOver(mouseX, mouseY) {
+        const distance = Math.sqrt((this.x - mouseX) ** 2 + (this.y - mouseY) ** 2);
+        return distance < this.radius;
+      }
+    }
+
+    // Generate spheres from Spotify data
+    function createSpheres(data) {
+      data.forEach(item => {
+        const radius = item.Popularity / 2; // Scale popularity to radius
+        const x = Math.random() * (canvas.width - radius * 2) + radius;
+        const y = Math.random() * (canvas.height - radius * 2) + radius;
+        const dx = (Math.random() - 0.5) * (item.BPM / 50); // Scale BPM to speed
+        const dy = (Math.random() - 0.5) * (item.BPM / 50);
+        const color = genreColors[item.Genre] || '#ffffff'; // Default to white if genre not found
+        spheres.push(new Sphere(x, y, radius, dx, dy, color, item.Track, item.Artist));
+      });
+    }
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      spheres.forEach(sphere => sphere.update());
+    }
+
+    // Mouse movement for tooltips
+    canvas.addEventListener('mousemove', (event) => {
+      const mouseX = event.clientX;
+      const mouseY = event.clientY;
+
+      let found = false;
+      spheres.forEach(sphere => {
+        if (sphere.isMouseOver(mouseX, mouseY)) {
+          tooltip.style.left = `${mouseX + 10}px`;
+          tooltip.style.top = `${mouseY + 10}px`;
+          tooltip.style.display = 'block';
+          tooltip.innerText = `Track: ${sphere.track}\nArtist: ${sphere.artist}`;
+          found = true;
+        }
+      });
+
+      if (!found) {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    // Load data from CSV
+    function loadCSVData() {
+      fetch('spotifytop50.csv')
+        .then(response => response.text())
+        .then(text => {
+          const rows = text.split('\n').slice(1); // Skip header row
+          const data = rows.map(row => {
+            const [Track, Artist, Genre, BPM, Popularity] = row.split(',');
+            return {
+              Track: Track.trim(),
+              Artist: Artist.trim(),
+              Genre: Genre.trim(),
+              BPM: parseFloat(BPM.trim()),
+              Popularity: parseFloat(Popularity.trim())
+            };
+          });
+
+          createSpheres(data);
+          animate();
+        })
+        .catch(error => console.error('Error loading CSV:', error));
+    }
+
+    // Adjust canvas size on window resize
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      spheres.length = 0; // Clear spheres array
+      loadCSVData(); // Reload spheres
+    });
+
+    // Initialize spheres by loading CSV data
+    loadCSVData();
+  </script>
+</body>
+</html>
