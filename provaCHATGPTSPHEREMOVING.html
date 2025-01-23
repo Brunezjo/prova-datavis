@@ -143,7 +143,7 @@
 
     // Load data from CSV
     function loadCSVData() {
-      fetch('spotifytop50.csv')
+      fetch('https://raw.githubusercontent.com/Brunezjo/prova-datavis/refs/heads/main/spotifytop50.csv')
         .then(response => response.text())
         .then(text => {
           const rows = text.split('\n').slice(1); // Skip header row
